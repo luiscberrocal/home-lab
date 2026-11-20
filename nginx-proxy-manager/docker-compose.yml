@@ -1,0 +1,17 @@
+# Nginx Proxy Manager - reverse proxy with a web UI and Let's Encrypt support.
+# Docs: https://nginxproxymanager.com/setup/
+services:
+  npm:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: nginx-proxy-manager
+    restart: unless-stopped
+    ports:
+      - "80:80"    # HTTP  (proxied traffic)
+      - "443:443"  # HTTPS (proxied traffic)
+      - "81:81"    # Admin web UI - keep this LAN-only
+    environment:
+      TZ: ${TZ:-America/Panama}
+      DISABLE_IPV6: "true"
+    volumes:
+      - ./data:/data                     # NPM database, proxy host configs
+      - ./letsencrypt:/etc/letsencrypt   # Certificates and private keys
