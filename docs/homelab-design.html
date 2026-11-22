@@ -175,9 +175,9 @@ footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line);
     <div class="eyebrow">Design doc · v2 · November 2026</div>
     <h1>Homelab Network Design</h1>
     <p class="lede">A segmented home network with a 4-bay NAS at the center. You reach it from anywhere over Tailscale, and clients reach a few published apps through Cloudflare Tunnel. Either way, the router has no open ports. It gets built in five phases, so each step works on its own before the next one starts.</p>
-    <div class="meta"><span>NAS: UGREEN DXP4800 GT</span><span>Disks: 3 × 4 TB WD Red Plus</span><span>App host: Linux + Docker</span><span>Remote: Tailscale</span><span>Public apps: Cloudflare Tunnel</span><span>Today: 2 × TP-Link Deco M5</span><span>Live version: <a href="https://claude.ai/artifact/Vu1Y8aFkj8gqW2DJ4xkWa3">claude.ai/artifact/Vu1Y8aFkj8gqW2DJ4xkWa3</a></span></div>
+    <div class="meta"><span>NAS: UGREEN DXP4800 GT</span><span>Disks: 3 × 4 TB WD Red Plus</span><span>App host: Linux + Docker</span><span>Remote: Tailscale</span><span>Public apps: Cloudflare Tunnel</span><span>ISP modem: ARRIS Touchstone (cable)</span><span>Today: 2 × TP-Link Deco M5</span><span>Live version: <a href="https://claude.ai/artifact/Vu1Y8aFkj8gqW2DJ4xkWa3">claude.ai/artifact/Vu1Y8aFkj8gqW2DJ4xkWa3</a></span></div>
     <nav class="toc" aria-label="Sections">
-      <a href="#summary">Summary</a><a href="#topology">Topology</a><a href="#vlans">Network segments</a><a href="#rules">Firewall rules</a><a href="#remote">Remote access</a><a href="#public">Client apps</a><a href="#storage">Storage &amp; backup</a><a href="#services">Services</a><a href="#phases">Phases</a><a href="#hardware">Hardware</a><a href="#security">Security baseline</a><a href="#questions">Open questions</a>
+      <a href="#summary">Summary</a><a href="#topology">Topology</a><a href="#vlans">Network segments</a><a href="#rules">Firewall rules</a><a href="#remote">Remote access</a><a href="#public">Client apps</a><a href="#storage">Storage &amp; backup</a><a href="#services">Services</a><a href="#phases">Phases</a><a href="#hardware">Hardware</a><a href="#modem">ISP modem</a><a href="#security">Security baseline</a><a href="#questions">Open questions</a>
     </nav>
   </header>
 
@@ -216,7 +216,7 @@ footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line);
         <!-- modem -->
         <path class="wire" d="M480 80 V112"/>
         <rect class="box" x="380" y="112" width="200" height="56" rx="8"/>
-        <text class="t1" x="480" y="137" text-anchor="middle">ISP modem</text>
+        <text class="t1" x="480" y="137" text-anchor="middle">ISP modem · ARRIS</text>
         <text class="t2" x="480" y="156" text-anchor="middle">Bridge mode if possible</text>
         <!-- gateway -->
         <path class="wire" d="M480 168 V196"/>
@@ -477,7 +477,7 @@ networks:
         <div class="ph-head"><div><div class="ph-num">Phase 2</div><h3>New gateway and switch, VLANs on the wire</h3></div><span class="ph-cost">≈ $230–450</span></div>
         <div class="cols">
           <div><h4>Do</h4><ul class="checks">
-            <li><label><input type="checkbox" id="p2a"><span>Put the ISP modem in bridge mode (or set up a DMZ to the new gateway)</span></label></li>
+            <li><label><input type="checkbox" id="p2a"><span>Put the ARRIS modem in bridge mode, or MAC-bridge the new gateway (see <a href="#modem">ISP modem</a>). Use a DMZ only as the fallback.</span></label></li>
             <li><label><input type="checkbox" id="p2b"><span>Install the gateway and switch. Create all 6 VLANs and DHCP scopes.</span></label></li>
             <li><label><input type="checkbox" id="p2c"><span>Move the NAS to the servers VLAN at <code>10.0.30.10</code></span></label></li>
             <li><label><input type="checkbox" id="p2d"><span>Switch the Decos to <b>access point mode</b>. Plug them into Trusted ports for now.</span></label></li>
@@ -562,6 +562,7 @@ networks:
           <tr><td>NAS</td><td>UGREEN DXP4800 GT</td><td>Docker, VMs, 10GbE, 2 × M.2</td><td class="mono">owned/planned</td><td class="mono">1</td></tr>
           <tr><td>Disks</td><td>3 × WD Red Plus 4 TB (WD40EFPX)</td><td>CMR NAS drives, RAID 5</td><td class="mono">owned/planned</td><td class="mono">1</td></tr>
           <tr><td>App host</td><td>Linux box with Docker</td><td>Runs the client-facing apps, isolated in the DMZ</td><td class="mono">owned/planned</td><td class="mono">2</td></tr>
+          <tr><td>ISP modem</td><td>ARRIS Touchstone cable gateway (950 family, firmware <code>9.1.103GE4AL</code>)</td><td>Stays in place. Goes into bridge mode once the new gateway is in.</td><td class="mono">ISP-supplied</td><td class="mono">2</td></tr>
           <tr><td>Domain</td><td><code>mydomain.com</code>, DNS on Cloudflare</td><td>Public app names, wildcard cert for <code>*.home</code></td><td class="mono">$10–20/yr</td><td class="mono">1</td></tr>
           <tr><td>Gateway</td><td>UniFi Cloud Gateway Ultra or Max</td><td>VLAN routing, firewall, controller for everything else</td><td class="mono">$130–200</td><td class="mono">2</td></tr>
           <tr><td>Switch</td><td>UniFi 8-port PoE (Lite 8 PoE, or a 2.5GbE model)</td><td>VLAN trunks, powers the APs and cameras</td><td class="mono">$110–250</td><td class="mono">2</td></tr>
@@ -575,6 +576,43 @@ networks:
       </table>
     </div>
     <p class="prose muted">The DXP4800 GT's 10GbE ports work at 1 or 2.5 GbE. The 10GbE speed only matters once your switch and computers support it, and that can be a much later upgrade.</p>
+  </section>
+
+  <section id="modem">
+    <div class="head"><div class="eyebrow">ISP modem</div><h2>The ARRIS gateway and bridge mode</h2>
+      <p class="prose muted">Checked on 22 November 2026 by loading the modem's login page at <code>http://192.168.0.1</code>, without logging in. The exact model only appears after login or on the sticker.</p></div>
+    <div class="facts">
+      <div class="fact"><span class="k">Device</span><span class="v">ARRIS Touchstone cable gateway</span><span class="d">950 family: TG1682G, TG2482A, DG3270, TG1672G and similar. Confirm the model on the sticker.</span></div>
+      <div class="fact"><span class="k">Firmware</span><span class="v mono">9.1.103GE4AL</span><span class="d">Built May 2023. The ISP pushes updates, not you.</span></div>
+      <div class="fact"><span class="k">Admin page</span><span class="v mono">http://192.168.0.1</span><span class="d">Login is on the sticker. The ISP's technician login may show more options.</span></div>
+      <div class="fact"><span class="k">Today</span><span class="v">Double NAT</span><span class="d">The modem routes <code>192.168.0.x</code>, and the Decos route <code>192.168.68.x</code> behind it.</span></div>
+    </div>
+    <div class="prose" style="display:grid;gap:12px">
+      <h3>What the firmware supports</h3>
+      <ul>
+        <li><b>NAT Mode: Bridge.</b> The firmware's help text says: <i>"Bridge: Data will pass through the device directly without any routing."</i> The other choices are Routed with NAT (today) and Routed without NAT. The same text warns that <i>"not all options may be available"</i>, so the ISP may hide Bridge from the customer login.</li>
+        <li><b>MAC Bridging.</b> This bridges only the listed MAC addresses to the WAN, <i>"bypassing all of the DHCP, NAT and Firewall functions"</i>. With the UniFi gateway's WAN MAC listed, the gateway gets the public IP and the modem keeps routing for anything else. The page only shows this menu on some ISP builds.</li>
+      </ul>
+      <h3>Steps</h3>
+      <ol>
+        <li>Read the exact model off the sticker and add it here.</li>
+        <li>Log in at <code>http://192.168.0.1</code>. Look for <b>NAT Mode</b> on the gateway/router setup page, and for <b>Firewall → MAC Bridging</b>. Note which options appear. Don't change anything yet.</li>
+        <li>If Bridge isn't offered, ask the ISP (below).</li>
+        <li>Switch to bridge mode only in Phase 2, with the UniFi gateway plugged in. In bridge mode the modem stops handing out addresses, so the Decos lose internet until the new gateway is in place. Undoing it may need a factory reset or a call to the ISP.</li>
+        <li>Check it worked: the UniFi gateway's WAN IP must match <code>whatismyip.com</code>. A WAN IP in <code>100.64.0.0/10</code> means CGNAT at the ISP. Tailscale and Cloudflare Tunnel still work then.</li>
+      </ol>
+      <h3>Question for the ISP</h3>
+      <div class="callout">
+        <p><i>"I'm installing my own router behind the ARRIS cable modem you supplied (firmware 9.1.103GE4AL). Can you put the modem in <b>bridge mode</b>? If you don't allow full bridge mode, can you <b>MAC-bridge</b> one device so my router gets the public IP directly?"</i></p>
+      </div>
+      <p>Also ask:</p>
+      <ul>
+        <li>Is my connection plain DHCP, or does my own router need <b>PPPoE credentials</b>?</li>
+        <li>Do I get a <b>public IPv4 address</b>, or am I behind <b>CGNAT</b>? Is IPv6 available?</li>
+        <li>Do I need to <b>register my router's MAC address</b>, and how many devices can get a public IP?</li>
+        <li>Will bridge mode <b>survive firmware updates and reboots</b>, and how do I switch back?</li>
+      </ul>
+    </div>
   </section>
 
   <section id="security">
@@ -595,7 +633,7 @@ networks:
     <div class="head"><div class="eyebrow">Open questions</div><h2>Decisions still to make</h2>
       <p class="prose muted">These change the parts list or the layout. Answers can go into the next version of this doc.</p></div>
     <div>
-      <div class="q"><b>Can the ISP modem go into bridge mode?</b><span class="muted">If not, the new gateway sits behind it (double NAT). That's fine for Tailscale, but harder to troubleshoot.</span></div>
+      <div class="q"><b>Can the ISP modem go into bridge mode?</b><span class="muted">Partly answered: the ARRIS firmware supports Bridge and MAC Bridging, but the ISP may hide them. Still to do: read the model off the sticker, check the admin page, and ask the ISP (see <a href="#modem">ISP modem</a>). If neither works, the new gateway sits behind it (double NAT). That's fine for Tailscale, but harder to troubleshoot.</span></div>
       <div class="q"><b>Can you run Ethernet to where the two access points will go?</b><span class="muted">PoE APs need a cable each. If not, UniFi APs can mesh wirelessly, with some speed loss.</span></div>
       <div class="q"><b>How many cameras, and are any outdoors?</b><span class="muted">This sizes the PoE budget, the surveillance quota and whether Frigate needs a Coral accelerator.</span></div>
       <div class="q"><b>UniFi or TP-Link Omada?</b><span class="muted">UniFi is more polished. Omada costs about 30% less for the same VLAN features.</span></div>
