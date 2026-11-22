@@ -22,6 +22,7 @@
   --v-cam: #b23a3a;   --v-cam-bg: #f9e3e1;
   --v-guest: #6b46b8; --v-guest-bg: #ece5fa;
   --v-dmz: #b5541c;   --v-dmz-bg: #fbe6da;
+  --v-stream: #a8326e; --v-stream-bg: #f8e1ec;
 
   --ok: #1e7a3c;   --ok-bg: #e0f3e6;
   --warn: #9a6400; --warn-bg: #fbefd6;
@@ -41,7 +42,7 @@
     --v-iot: #e8b14f; --v-iot-bg: #3a2d12;
     --v-cam: #ef8a80; --v-cam-bg: #3f1f1d;
     --v-guest: #b79cf0; --v-guest-bg: #2c2242;
-    --v-dmz: #f0a070; --v-dmz-bg: #3d2416;
+    --v-dmz: #f0a070; --v-dmz-bg: #3d2416; --v-stream: #f08cbd; --v-stream-bg: #3d1a2c;
     --ok: #6cd38e; --ok-bg: #173523; --warn: #e8b14f; --warn-bg: #3a2d12; --no: #ef8a80; --no-bg: #3f1f1d;
     color-scheme: dark;
   }
@@ -55,7 +56,7 @@
   --v-iot: #e8b14f; --v-iot-bg: #3a2d12;
   --v-cam: #ef8a80; --v-cam-bg: #3f1f1d;
   --v-guest: #b79cf0; --v-guest-bg: #2c2242;
-  --v-dmz: #f0a070; --v-dmz-bg: #3d2416;
+  --v-dmz: #f0a070; --v-dmz-bg: #3d2416; --v-stream: #f08cbd; --v-stream-bg: #3d1a2c;
   --ok: #6cd38e; --ok-bg: #173523; --warn: #e8b14f; --warn-bg: #3a2d12; --no: #ef8a80; --no-bg: #3f1f1d;
   color-scheme: dark;
 }
@@ -118,6 +119,7 @@ td.nowrap { white-space: nowrap; }
 .vl.cam { color: var(--v-cam); background: var(--v-cam-bg); }
 .vl.guest { color: var(--v-guest); background: var(--v-guest-bg); }
 .vl.dmz { color: var(--v-dmz); background: var(--v-dmz-bg); }
+.vl.stream { color: var(--v-stream); background: var(--v-stream-bg); }
 pre.code { margin: 0; padding: 14px 16px; overflow-x: auto; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; font-family: var(--f-mono); font-size: 0.84rem; line-height: 1.55; color: var(--fg); }
 pre.code .c { color: var(--muted); }
 
@@ -177,14 +179,14 @@ footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line);
     <p class="lede">A segmented home network with a 4-bay NAS at the center. You reach it from anywhere over Tailscale, and clients reach a few published apps through Cloudflare Tunnel. Either way, the router has no open ports. It gets built in five phases, so each step works on its own before the next one starts.</p>
     <div class="meta"><span>NAS: UGREEN DXP4800 GT</span><span>Disks: 3 × 4 TB WD Red Plus</span><span>App host: Linux + Docker</span><span>Remote: Tailscale</span><span>Public apps: Cloudflare Tunnel</span><span>ISP modem: ARRIS Touchstone (cable)</span><span>Today: 2 × TP-Link Deco M5</span><span>Live version: <a href="https://claude.ai/artifact/Vu1Y8aFkj8gqW2DJ4xkWa3">claude.ai/artifact/Vu1Y8aFkj8gqW2DJ4xkWa3</a></span></div>
     <nav class="toc" aria-label="Sections">
-      <a href="#summary">Summary</a><a href="#topology">Topology</a><a href="#vlans">Network segments</a><a href="#rules">Firewall rules</a><a href="#remote">Remote access</a><a href="#public">Client apps</a><a href="#storage">Storage &amp; backup</a><a href="#services">Services</a><a href="#phases">Phases</a><a href="#hardware">Hardware</a><a href="#modem">ISP modem</a><a href="#security">Security baseline</a><a href="#questions">Open questions</a>
+      <a href="#summary">Summary</a><a href="#topology">Topology</a><a href="#vlans">Network segments</a><a href="#rules">Firewall rules</a><a href="#remote">Remote access</a><a href="#public">Client apps</a><a href="#streaming">US streaming</a><a href="#storage">Storage &amp; backup</a><a href="#services">Services</a><a href="#phases">Phases</a><a href="#hardware">Hardware</a><a href="#modem">ISP modem</a><a href="#security">Security baseline</a><a href="#questions">Open questions</a>
     </nav>
   </header>
 
   <section id="summary">
     <div class="head"><div class="eyebrow">Summary</div><h2>The end state at a glance</h2></div>
     <div class="facts">
-      <div class="fact"><span class="k">Segments</span><span class="v">7 VLANs</span><span class="d">Management, trusted, servers, IoT, cameras, guest, DMZ</span></div>
+      <div class="fact"><span class="k">Segments</span><span class="v">8 VLANs</span><span class="d">Management, trusted, servers, IoT, cameras, guest, DMZ, streaming</span></div>
       <div class="fact"><span class="k">Storage</span><span class="v">8 TB usable (RAID 5)</span><span class="d">3 × 4 TB, survives one disk failure. A 4th disk later brings it to 12 TB.</span></div>
       <div class="fact"><span class="k">Access from outside</span><span class="v">0 open ports</span><span class="d">Tailscale for you. Cloudflare Tunnel for client apps on the Linux box.</span></div>
       <div class="fact"><span class="k">Router</span><span class="v">VLAN-capable gateway</span><span class="d">Replaces the Deco M5s, which can't do VLANs</span></div>
@@ -275,7 +277,7 @@ footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line);
   </section>
 
   <section id="vlans">
-    <div class="head"><div class="eyebrow">Network segments</div><h2>Seven VLANs, one job each</h2>
+    <div class="head"><div class="eyebrow">Network segments</div><h2>Eight VLANs, one job each</h2>
       <p class="prose muted">The VLAN ID matches the third octet of the subnet, so you can tell a device's VLAN from its IP. The design uses <code>10.0.x.0/24</code> instead of <code>192.168.1.x</code>. Hotel and café networks use <code>192.168.x</code> almost everywhere, and an address clash there breaks remote access.</p></div>
     <div class="scroll">
       <table>
@@ -288,6 +290,7 @@ footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line);
           <tr><td><span class="vl cam">Cameras</span></td><td class="mono">50</td><td class="mono nowrap">10.0.50.0/24</td><td class="muted">none (PoE wired)</td><td>IP cameras, doorbell</td><td><b>No</b></td></tr>
           <tr><td><span class="vl guest">Guest</span></td><td class="mono">60</td><td class="mono nowrap">10.0.60.0/24</td><td class="mono">Home-Guest</td><td>Visitors' devices, client isolation on</td><td>Yes, only that</td></tr>
           <tr><td><span class="vl dmz">DMZ</span></td><td class="mono">70</td><td class="mono nowrap">10.0.70.0/24</td><td class="muted">none (wired)</td><td>Linux box <code>.10</code> running the client-facing apps</td><td>Yes (Cloudflare Tunnel goes out)</td></tr>
+          <tr><td><span class="vl stream">Streaming</span></td><td class="mono">80</td><td class="mono nowrap">10.0.80.0/24</td><td class="mono">Home-TV</td><td>Smart TV, streaming box. Their traffic leaves through Surfshark in the US.</td><td>Yes, <b>only through the VPN</b></td></tr>
         </tbody>
       </table>
     </div>
@@ -299,15 +302,16 @@ footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line);
       <p class="prose muted">The default between VLANs is <b>block</b>. Every arrow below is an explicit allow rule on the gateway. Replies to allowed connections ("established/related") always pass, so a trusted laptop can open a camera stream without the camera being able to start a connection back.</p></div>
     <div class="scroll">
       <table class="matrix">
-        <thead><tr><th>From ↓ / To →</th><th>Mgmt</th><th>Trusted</th><th>Servers</th><th>IoT</th><th>Cameras</th><th>Guest</th><th>DMZ</th><th>Internet</th></tr></thead>
+        <thead><tr><th>From ↓ / To →</th><th>Mgmt</th><th>Trusted</th><th>Servers</th><th>IoT</th><th>Cameras</th><th>Guest</th><th>DMZ</th><th>Streaming</th><th>Internet</th></tr></thead>
         <tbody>
-          <tr><td><span class="vl mgmt">Management</span></td><td><span class="p na">—</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p lim">Updates</span></td></tr>
-          <tr><td><span class="vl trust">Trusted</span></td><td><span class="p ok">Allow</span></td><td><span class="p na">—</span></td><td><span class="p ok">Allow</span></td><td><span class="p ok">Allow</span></td><td><span class="p lim">Viewing</span></td><td><span class="p no">Block</span></td><td><span class="p ok">Allow</span></td><td><span class="p ok">Allow</span></td></tr>
-          <tr><td><span class="vl srv">Servers</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p na">—</span></td><td><span class="p ok">Allow</span></td><td><span class="p ok">Allow</span></td><td><span class="p no">Block</span></td><td><span class="p lim">Backup pull</span></td><td><span class="p ok">Allow</span></td></tr>
-          <tr><td><span class="vl iot">IoT</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p lim">HA + MQTT</span></td><td><span class="p na">—</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p ok">Allow</span></td></tr>
-          <tr><td><span class="vl cam">Cameras</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p lim">NTP only</span></td><td><span class="p no">Block</span></td><td><span class="p na">—</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td></tr>
-          <tr><td><span class="vl guest">Guest</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p na">—</span></td><td><span class="p no">Block</span></td><td><span class="p ok">Allow</span></td></tr>
-          <tr><td><span class="vl dmz">DMZ</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p lim">DNS only</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p na">—</span></td><td><span class="p ok">Allow</span></td></tr>
+          <tr><td><span class="vl mgmt">Management</span></td><td><span class="p na">—</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p lim">Updates</span></td></tr>
+          <tr><td><span class="vl trust">Trusted</span></td><td><span class="p ok">Allow</span></td><td><span class="p na">—</span></td><td><span class="p ok">Allow</span></td><td><span class="p ok">Allow</span></td><td><span class="p lim">Viewing</span></td><td><span class="p no">Block</span></td><td><span class="p ok">Allow</span></td><td><span class="p ok">Allow</span></td><td><span class="p ok">Allow</span></td></tr>
+          <tr><td><span class="vl srv">Servers</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p na">—</span></td><td><span class="p ok">Allow</span></td><td><span class="p ok">Allow</span></td><td><span class="p no">Block</span></td><td><span class="p lim">Backup pull</span></td><td><span class="p no">Block</span></td><td><span class="p ok">Allow</span></td></tr>
+          <tr><td><span class="vl iot">IoT</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p lim">HA + MQTT</span></td><td><span class="p na">—</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p ok">Allow</span></td></tr>
+          <tr><td><span class="vl cam">Cameras</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p lim">NTP only</span></td><td><span class="p no">Block</span></td><td><span class="p na">—</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td></tr>
+          <tr><td><span class="vl guest">Guest</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p na">—</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p ok">Allow</span></td></tr>
+          <tr><td><span class="vl dmz">DMZ</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p lim">DNS only</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p na">—</span></td><td><span class="p no">Block</span></td><td><span class="p ok">Allow</span></td></tr>
+          <tr><td><span class="vl stream">Streaming</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p lim">Jellyfin</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p na">—</span></td><td><span class="p lim">Via VPN only</span></td></tr>
         </tbody>
       </table>
     </div>
@@ -317,8 +321,9 @@ footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line);
       <li><b>Servers → Cameras</b> lets Frigate pull the RTSP video streams (<code>554</code>). The cameras never talk to the internet. That blocks the "phone home" cloud features many cheap cameras ship with.</li>
       <li><b>DMZ → anything at home</b> is blocked, apart from DNS. The Linux box is the one machine strangers' traffic reaches, so if an app on it is ever compromised, the attacker is stuck in the DMZ. The NAS pulls backups <i>from</i> it (<b>Servers → DMZ</b>, SSH <code>22</code>), so the Linux box never holds credentials for the NAS.</li>
       <li><b>Trusted → Cameras</b> is for the cameras' own web pages during setup. Day to day you watch video through Frigate or Home Assistant instead.</li>
-      <li><b>DNS:</b> every VLAN may reach AdGuard Home on the NAS on port <code>53</code>. Block outbound port 53 to anywhere else, so IoT devices can't bypass it with hard-coded DNS servers.</li>
-      <li><b>Casting and AirPlay:</b> turn on the gateway's mDNS reflector between Trusted and IoT, so your phone still finds the TV and speakers.</li>
+      <li><b>DNS:</b> every VLAN except Streaming may reach AdGuard Home on the NAS on port <code>53</code>. Block outbound port 53 to anywhere else, so IoT devices can't bypass it with hard-coded DNS servers. Streaming uses Surfshark's DNS through the tunnel instead (see <a href="#streaming">US streaming</a>).</li>
+      <li><b>Streaming → Internet</b> goes only through the Surfshark tunnel, with a kill switch: if the VPN drops, the TV loses internet instead of falling back to Panama. <b>Streaming → Servers</b> is limited to Jellyfin (<code>8096</code>), so the TV can still play your own media.</li>
+      <li><b>Casting and AirPlay:</b> turn on the gateway's mDNS reflector between Trusted, IoT and Streaming, so your phone still finds the TV and speakers.</li>
     </ul>
   </section>
 
@@ -401,6 +406,40 @@ networks:
     </div>
   </section>
 
+  <section id="streaming">
+    <div class="head"><div class="eyebrow">US streaming</div><h2>Watching US services from Panama</h2>
+      <p class="prose muted">The TV gets its own VLAN, and the UniFi gateway sends all of that VLAN's traffic through a Surfshark WireGuard tunnel that comes out at a dedicated US IP. Streaming services see a US home connection. Every other device in the house keeps using the normal Panama connection.</p></div>
+    <div class="facts">
+      <div class="fact"><span class="k">Provider</span><span class="v">Surfshark Starter</span><span class="d">≈ $2.49/mo on the 2-year plan. Month to month costs ≈ $16–19.</span></div>
+      <div class="fact"><span class="k">Dedicated US IP</span><span class="v">≈ $3.75/mo add-on</span><span class="d">An address only you use, so streaming services rarely flag it as a VPN</span></div>
+      <div class="fact"><span class="k">Total</span><span class="v">≈ $6.25/mo</span><span class="d">About $150 for the first 2 years. Renewal costs more.</span></div>
+      <div class="fact"><span class="k">Network</span><span class="v">VLAN 80 · Home-TV</span><span class="d"><code>10.0.80.0/24</code>, kill switch on, IPv6 off</span></div>
+    </div>
+<pre class="code">Smart TV ─► Home-TV (VLAN 80) ─► UniFi gateway ─► WireGuard ─► Surfshark, dedicated US IP ─► Netflix, Hulu…
+Everything else ───────────────► UniFi gateway ─► normal Panama internet</pre>
+    <div class="prose" style="display:grid;gap:12px">
+      <h3>Setup</h3>
+      <ol>
+        <li><b>Test before committing.</b> Install the Surfshark app on a phone or a Google TV / Apple TV box, connect to a US server, and check that the services you use play. Surfshark has a 30-day money-back guarantee.</li>
+        <li><b>Add a dedicated IP in a US city</b> from the Surfshark account. Then go to <i>Manual setup → Router → WireGuard</i>, generate a key pair, and download the config file for the dedicated IP location.</li>
+        <li><b>UniFi VPN client:</b> <i>Settings → VPN → VPN Client → Create New → WireGuard</i>, and upload the config file.</li>
+        <li><b>Network:</b> create VLAN 80 (<code>10.0.80.0/24</code>) and the <code>Home-TV</code> SSID. Turn IPv6 <b>off</b> on this network, so traffic can't go around the tunnel.</li>
+        <li><b>Policy-based route</b> (called Traffic Routes in older UniFi versions): source = Streaming network, destination = all internet traffic, interface = the Surfshark client. Turn on the <b>kill switch</b>.</li>
+        <li><b>DNS:</b> give the Streaming network the DNS servers from the Surfshark config file instead of AdGuard, so lookups also come from the US.</li>
+        <li><b>Move the TV</b> (or the streaming box) to <code>Home-TV</code> and sign in to the apps again.</li>
+      </ol>
+      <h3>Check that it works</h3>
+      <ul>
+        <li>A browser on a device joined to <code>Home-TV</code> shows the dedicated US IP on <code>whatismyip.com</code>, and only US servers on <code>dnsleaktest.com</code>.</li>
+        <li>With the VPN client disabled, <code>Home-TV</code> has no internet. That proves the kill switch works.</li>
+        <li>4K streaming needs about 25 Mbps through the tunnel. Check the gateway's WireGuard throughput rating against your plan.</li>
+      </ul>
+      <div class="callout warn"><b>Limits.</b> Some services (Hulu, Peacock, YouTube TV) want a US payment card or check your location again from time to time. Netflix and Prime Video work with your existing account and show the US catalog. Getting around regional limits breaks most services' terms of use. In practice they show a "proxy detected" error rather than closing accounts. If a smart TV app keeps detecting the VPN, an Apple TV or Google TV box on <code>Home-TV</code> usually behaves better.</div>
+      <div class="callout"><b>Until Phase 3:</b> the Decos can't route one device through a VPN. In the meantime, run the Surfshark app directly on a Google TV or Apple TV box.</div>
+      <p class="muted">Prices checked on 22 November 2026 from review and deal sites, not from Surfshark's own site. Confirm them on surfshark.com before buying, including that the dedicated IP is available in a US city and that WireGuard manual setup is included in the plan.</p>
+    </div>
+  </section>
+
   <section id="storage">
     <div class="head"><div class="eyebrow">Storage &amp; backup</div><h2>8 TB usable, protected three ways</h2></div>
     <div class="facts">
@@ -478,7 +517,7 @@ networks:
         <div class="cols">
           <div><h4>Do</h4><ul class="checks">
             <li><label><input type="checkbox" id="p2a"><span>Put the ARRIS modem in bridge mode, or MAC-bridge the new gateway (see <a href="#modem">ISP modem</a>). Use a DMZ only as the fallback.</span></label></li>
-            <li><label><input type="checkbox" id="p2b"><span>Install the gateway and switch. Create all 6 VLANs and DHCP scopes.</span></label></li>
+            <li><label><input type="checkbox" id="p2b"><span>Install the gateway and switch. Create the VLANs and DHCP scopes (Streaming can wait for Phase 3).</span></label></li>
             <li><label><input type="checkbox" id="p2c"><span>Move the NAS to the servers VLAN at <code>10.0.30.10</code></span></label></li>
             <li><label><input type="checkbox" id="p2d"><span>Switch the Decos to <b>access point mode</b>. Plug them into Trusted ports for now.</span></label></li>
             <li><label><input type="checkbox" id="p2e"><span>Apply the firewall matrix and point DHCP DNS at AdGuard</span></label></li>
@@ -498,7 +537,7 @@ networks:
       </article>
 
       <article class="phase" data-phase="3">
-        <div class="ph-head"><div><div class="ph-num">Phase 3</div><h3>Wi-Fi per VLAN, move the IoT devices</h3></div><span class="ph-cost">≈ $200–300</span></div>
+        <div class="ph-head"><div><div class="ph-num">Phase 3</div><h3>Wi-Fi per VLAN, move the IoT devices, US streaming</h3></div><span class="ph-cost">≈ $200–300 + ≈ $6/mo VPN</span></div>
         <div class="cols">
           <div><h4>Do</h4><ul class="checks">
             <li><label><input type="checkbox" id="p3a"><span>Replace the Decos with two VLAN-aware access points (PoE)</span></label></li>
@@ -506,11 +545,16 @@ networks:
             <li><label><input type="checkbox" id="p3c"><span>Re-join every IoT device to Home-IoT, one room at a time</span></label></li>
             <li><label><input type="checkbox" id="p3d"><span>Turn on the mDNS reflector and test casting to the TV</span></label></li>
             <li><label><input type="checkbox" id="p3e"><span>Retire the Decos, or keep one as a guest-only AP on a Guest port</span></label></li>
+            <li><label><input type="checkbox" id="p3f"><span>Buy Surfshark plus a dedicated US IP. Test your streaming services within the 30-day refund window.</span></label></li>
+            <li><label><input type="checkbox" id="p3g"><span>Create the Streaming VLAN and the Home-TV SSID. Import the WireGuard config and add the policy route with the kill switch.</span></label></li>
+            <li><label><input type="checkbox" id="p3h"><span>Move the TV (or streaming box) to Home-TV</span></label></li>
           </ul></div>
           <div><h4>Done when</h4><ul>
             <li>The gateway's client list shows no IoT devices on Trusted</li>
             <li>From an IoT device's subnet, the NAS file shares don't respond</li>
             <li>Casting and AirPlay from your phone still work</li>
+            <li>A US-only title plays on the TV, and a device on Home-TV shows the dedicated US IP and only US DNS servers</li>
+            <li>With the VPN client turned off, Home-TV has no internet</li>
           </ul></div>
         </div>
       </article>
@@ -563,6 +607,7 @@ networks:
           <tr><td>Disks</td><td>3 × WD Red Plus 4 TB (WD40EFPX)</td><td>CMR NAS drives, RAID 5</td><td class="mono">owned/planned</td><td class="mono">1</td></tr>
           <tr><td>App host</td><td>Linux box with Docker</td><td>Runs the client-facing apps, isolated in the DMZ</td><td class="mono">owned/planned</td><td class="mono">2</td></tr>
           <tr><td>ISP modem</td><td>ARRIS Touchstone cable gateway (950 family, firmware <code>9.1.103GE4AL</code>)</td><td>Stays in place. Goes into bridge mode once the new gateway is in.</td><td class="mono">ISP-supplied</td><td class="mono">2</td></tr>
+          <tr><td>Streaming VPN</td><td>Surfshark Starter, 2-year plan, plus a dedicated US IP</td><td>WireGuard config for the UniFi VPN client. The dedicated IP gets blocked far less than shared servers.</td><td class="mono">≈ $6.25/mo</td><td class="mono">3</td></tr>
           <tr><td>Domain</td><td><code>mydomain.com</code>, DNS on Cloudflare</td><td>Public app names, wildcard cert for <code>*.home</code></td><td class="mono">$10–20/yr</td><td class="mono">1</td></tr>
           <tr><td>Gateway</td><td>UniFi Cloud Gateway Ultra or Max</td><td>VLAN routing, firewall, controller for everything else</td><td class="mono">$130–200</td><td class="mono">2</td></tr>
           <tr><td>Switch</td><td>UniFi 8-port PoE (Lite 8 PoE, or a 2.5GbE model)</td><td>VLAN trunks, powers the APs and cameras</td><td class="mono">$110–250</td><td class="mono">2</td></tr>
