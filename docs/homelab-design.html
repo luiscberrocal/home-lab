@@ -1,0 +1,632 @@
+<title>Homelab Network Design</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: single reading column (~70ch) with wide tables/diagram breaking out to 1080px; sticky section nav on wide screens. */
+:root {
+  --bg: #f6f8f9;
+  --surface: #ffffff;
+  --surface-2: #eef2f4;
+  --fg: #16212b;
+  --muted: #5a6b78;
+  --line: #d5dde3;
+  --accent: #0b6e79;
+  --accent-soft: #dff0f1;
+
+  --v-mgmt: #5f6b76;  --v-mgmt-bg: #e8ecef;
+  --v-trust: #1f5fbf; --v-trust-bg: #e2ebfa;
+  --v-srv: #0b7a6e;   --v-srv-bg: #ddf2ee;
+  --v-iot: #9a6400;   --v-iot-bg: #fbefd6;
+  --v-cam: #b23a3a;   --v-cam-bg: #f9e3e1;
+  --v-guest: #6b46b8; --v-guest-bg: #ece5fa;
+  --v-dmz: #b5541c;   --v-dmz-bg: #fbe6da;
+
+  --ok: #1e7a3c;   --ok-bg: #e0f3e6;
+  --warn: #9a6400; --warn-bg: #fbefd6;
+  --no: #a83232;   --no-bg: #f8e2e0;
+
+  --f-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f161c; --surface: #162029; --surface-2: #1c2833; --fg: #e3eaef; --muted: #9aabb8; --line: #2b3a46;
+    --accent: #4cc2cc; --accent-soft: #143a40;
+    --v-mgmt: #a7b3bd; --v-mgmt-bg: #26313a;
+    --v-trust: #7fa9f0; --v-trust-bg: #1b2a44;
+    --v-srv: #52c9b6; --v-srv-bg: #133631;
+    --v-iot: #e8b14f; --v-iot-bg: #3a2d12;
+    --v-cam: #ef8a80; --v-cam-bg: #3f1f1d;
+    --v-guest: #b79cf0; --v-guest-bg: #2c2242;
+    --v-dmz: #f0a070; --v-dmz-bg: #3d2416;
+    --ok: #6cd38e; --ok-bg: #173523; --warn: #e8b14f; --warn-bg: #3a2d12; --no: #ef8a80; --no-bg: #3f1f1d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f161c; --surface: #162029; --surface-2: #1c2833; --fg: #e3eaef; --muted: #9aabb8; --line: #2b3a46;
+  --accent: #4cc2cc; --accent-soft: #143a40;
+  --v-mgmt: #a7b3bd; --v-mgmt-bg: #26313a;
+  --v-trust: #7fa9f0; --v-trust-bg: #1b2a44;
+  --v-srv: #52c9b6; --v-srv-bg: #133631;
+  --v-iot: #e8b14f; --v-iot-bg: #3a2d12;
+  --v-cam: #ef8a80; --v-cam-bg: #3f1f1d;
+  --v-guest: #b79cf0; --v-guest-bg: #2c2242;
+  --v-dmz: #f0a070; --v-dmz-bg: #3d2416;
+  --ok: #6cd38e; --ok-bg: #173523; --warn: #e8b14f; --warn-bg: #3a2d12; --no: #ef8a80; --no-bg: #3f1f1d;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--f-body); font-size: 16px; line-height: 1.6;
+}
+.wrap {
+  max-width: 1080px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 80px;
+}
+.prose { max-width: 70ch; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; line-height: 1.2; margin: 0; }
+h1 { font-size: clamp(2rem, 5vw, 2.8rem); font-weight: 700; letter-spacing: -0.02em; }
+h2 { font-size: 1.6rem; font-weight: 600; }
+h3 { font-size: 1.12rem; font-weight: 600; }
+p { margin: 0; }
+a { color: var(--accent); }
+code, .mono { font-family: var(--f-mono); font-size: 0.88em; }
+.eyebrow { font-family: var(--f-mono); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.muted { color: var(--muted); }
+
+header.top { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--line); }
+header.top .lede { font-size: 1.15rem; color: var(--muted); max-width: 62ch; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 20px; font-family: var(--f-mono); font-size: 0.82rem; color: var(--muted); }
+
+nav.toc { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 20px; }
+nav.toc a { font-size: 0.85rem; text-decoration: none; color: var(--fg); padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+nav.toc a:hover, nav.toc a:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
+
+section { padding-top: 48px; display: grid; gap: 18px; scroll-margin-top: 16px; }
+section > .head { display: grid; gap: 6px; }
+ul, ol { margin: 0; padding-left: 1.25em; display: grid; gap: 6px; }
+
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.fact { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: grid; gap: 4px; min-width: 0; }
+.fact .k { font-family: var(--f-mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.fact .v { font-weight: 600; }
+.fact .d { font-size: 0.9rem; color: var(--muted); }
+
+.callout { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 12px 16px; border-radius: 0 6px 6px 0; max-width: 78ch; }
+.callout.warn { border-color: var(--warn); background: var(--warn-bg); }
+
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--f-mono); font-weight: 500; font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.nowrap { white-space: nowrap; }
+
+.vl { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-mono); font-size: 0.8rem; font-weight: 500; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
+.vl.mgmt { color: var(--v-mgmt); background: var(--v-mgmt-bg); }
+.vl.trust { color: var(--v-trust); background: var(--v-trust-bg); }
+.vl.srv { color: var(--v-srv); background: var(--v-srv-bg); }
+.vl.iot { color: var(--v-iot); background: var(--v-iot-bg); }
+.vl.cam { color: var(--v-cam); background: var(--v-cam-bg); }
+.vl.guest { color: var(--v-guest); background: var(--v-guest-bg); }
+.vl.dmz { color: var(--v-dmz); background: var(--v-dmz-bg); }
+pre.code { margin: 0; padding: 14px 16px; overflow-x: auto; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; font-family: var(--f-mono); font-size: 0.84rem; line-height: 1.55; color: var(--fg); }
+pre.code .c { color: var(--muted); }
+
+.matrix td, .matrix th { text-align: center; white-space: nowrap; }
+.matrix td:first-child, .matrix th:first-child { text-align: left; }
+.p { display: inline-block; font-size: 0.78rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+.p.ok { color: var(--ok); background: var(--ok-bg); }
+.p.lim { color: var(--warn); background: var(--warn-bg); }
+.p.no { color: var(--no); background: var(--no-bg); }
+.p.na { color: var(--muted); background: transparent; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 0.88rem; color: var(--muted); align-items: center; }
+
+.diagram { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 12px; }
+.diagram svg { display: block; width: 100%; min-width: 900px; height: auto; }
+.diagram .cf { fill: none; stroke: var(--v-dmz); stroke-width: 2; stroke-dasharray: 6 5; }
+.diagram .cfl { fill: var(--v-dmz); font: 500 12px var(--f-mono); }
+.diagram .tag.dmz { fill: var(--v-dmz); }
+.diagram .box { fill: var(--surface-2); stroke: var(--line); stroke-width: 1.5; }
+.diagram .box.core { fill: var(--accent-soft); stroke: var(--accent); }
+.diagram .wire { fill: none; stroke: var(--muted); stroke-width: 1.6; }
+.diagram .tunnel { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 6 5; }
+.diagram .t1 { fill: var(--fg); font: 600 14px var(--f-display); }
+.diagram .t2 { fill: var(--muted); font: 12px var(--f-body); }
+.diagram .tag { font: 500 11px var(--f-mono); }
+.diagram .tag.mgmt { fill: var(--v-mgmt); } .diagram .tag.trust { fill: var(--v-trust); } .diagram .tag.srv { fill: var(--v-srv); }
+.diagram .tag.iot { fill: var(--v-iot); } .diagram .tag.cam { fill: var(--v-cam); } .diagram .tag.guest { fill: var(--v-guest); }
+.diagram .tl { fill: var(--accent); font: 500 12px var(--f-mono); }
+
+.phases { display: grid; gap: 16px; }
+.phase { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: grid; gap: 14px; }
+.phase .ph-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; }
+.phase .ph-num { font-family: var(--f-mono); font-size: 0.8rem; color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; }
+.phase .ph-cost { font-family: var(--f-mono); font-size: 0.85rem; color: var(--muted); }
+.phase .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px 28px; }
+.phase .cols > div { min-width: 0; display: grid; gap: 8px; align-content: start; }
+.phase h4 { margin: 0; font-family: var(--f-mono); font-weight: 500; font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.checks { list-style: none; padding: 0; gap: 6px; }
+.checks label { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+.checks input { margin-top: 5px; accent-color: var(--accent); flex: none; }
+.checks input:checked + span { color: var(--muted); text-decoration: line-through; }
+.checks input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.progress { font-family: var(--f-mono); font-size: 0.8rem; color: var(--muted); }
+
+.q { display: grid; gap: 4px; padding: 12px 0; border-bottom: 1px solid var(--line); max-width: 78ch; }
+.q:last-child { border-bottom: 0; }
+.q b { font-weight: 600; }
+
+footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 0.85rem; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">Design doc · v2 · November 2026</div>
+    <h1>Homelab Network Design</h1>
+    <p class="lede">A segmented home network with a 4-bay NAS at the center. You reach it from anywhere over Tailscale, and clients reach a few published apps through Cloudflare Tunnel. Either way, the router has no open ports. It gets built in five phases, so each step works on its own before the next one starts.</p>
+    <div class="meta"><span>NAS: UGREEN DXP4800 GT</span><span>Disks: 3 × 4 TB WD Red Plus</span><span>App host: Linux + Docker</span><span>Remote: Tailscale</span><span>Public apps: Cloudflare Tunnel</span><span>Today: 2 × TP-Link Deco M5</span><span>Live version: <a href="https://claude.ai/artifact/Vu1Y8aFkj8gqW2DJ4xkWa3">claude.ai/artifact/Vu1Y8aFkj8gqW2DJ4xkWa3</a></span></div>
+    <nav class="toc" aria-label="Sections">
+      <a href="#summary">Summary</a><a href="#topology">Topology</a><a href="#vlans">Network segments</a><a href="#rules">Firewall rules</a><a href="#remote">Remote access</a><a href="#public">Client apps</a><a href="#storage">Storage &amp; backup</a><a href="#services">Services</a><a href="#phases">Phases</a><a href="#hardware">Hardware</a><a href="#security">Security baseline</a><a href="#questions">Open questions</a>
+    </div>
+  </header>
+
+  <section id="summary">
+    <div class="head"><div class="eyebrow">Summary</div><h2>The end state at a glance</h2></div>
+    <div class="facts">
+      <div class="fact"><span class="k">Segments</span><span class="v">7 VLANs</span><span class="d">Management, trusted, servers, IoT, cameras, guest, DMZ</span></div>
+      <div class="fact"><span class="k">Storage</span><span class="v">8 TB usable (RAID 5)</span><span class="d">3 × 4 TB, survives one disk failure. A 4th disk later brings it to 12 TB.</span></div>
+      <div class="fact"><span class="k">Access from outside</span><span class="v">0 open ports</span><span class="d">Tailscale for you. Cloudflare Tunnel for client apps on the Linux box.</span></div>
+      <div class="fact"><span class="k">Router</span><span class="v">VLAN-capable gateway</span><span class="d">Replaces the Deco M5s, which can't do VLANs</span></div>
+      <div class="fact"><span class="k">Backups</span><span class="v">3-2-1</span><span class="d">NAS + USB drive + cloud copy of what matters</span></div>
+      <div class="fact"><span class="k">Services</span><span class="v">Docker + 1 VM</span><span class="d">Home Assistant, Jellyfin, Frigate, AdGuard, NPM</span></div>
+    </div>
+    <div class="callout warn prose">
+      <b>The one blocker:</b> the Deco M5 can't tag VLANs or map Wi-Fi networks to VLANs. Its "guest network" is the only isolation it offers. Segmenting IoT and cameras properly needs a new router, a managed switch and access points (Phase 2 and 3). Until then, the NAS and Tailscale work fine on the existing network.
+    </div>
+  </section>
+
+  <section id="topology">
+    <div class="head"><div class="eyebrow">Topology</div><h2>How it fits together</h2>
+      <p class="prose muted">Everything plugs into one managed switch. The gateway routes between VLANs and enforces the firewall rules. Nothing comes in through the router. Your own devices join a Tailscale tunnel that ends at the NAS. Clients reach the published apps at Cloudflare, which forwards the traffic down a tunnel the Linux box opened.</p></div>
+    <div class="diagram">
+      <svg viewBox="0 0 1150 520" role="img" aria-label="Network topology: internet to ISP modem in bridge mode, to the VLAN gateway, to a PoE managed switch, which connects two Wi-Fi access points, the NAS, PoE cameras, wired desk devices and the Linux app box on the DMZ VLAN. Remote devices reach the NAS through a Tailscale tunnel. External clients reach the Linux box's apps through Cloudflare Tunnel.">
+        <!-- remote -->
+        <rect class="box" x="20" y="24" width="230" height="72" rx="8"/>
+        <text class="t1" x="36" y="54">Your phone &amp; laptop</text>
+        <text class="t2" x="36" y="76">Anywhere, Tailscale app</text>
+        <!-- internet -->
+        <rect class="box" x="380" y="24" width="200" height="56" rx="28"/>
+        <text class="t1" x="480" y="57" text-anchor="middle">Internet</text>
+        <path class="tunnel" d="M250 60 H380"/>
+        <!-- tunnel continues to NAS -->
+        <path class="tunnel" d="M135 96 V250 H330 V440 H415"/>
+        <text class="tl" x="146" y="160">WireGuard tunnel</text>
+        <text class="tl" x="146" y="177">(Tailscale, no open ports)</text>
+        <!-- modem -->
+        <path class="wire" d="M480 80 V112"/>
+        <rect class="box" x="380" y="112" width="200" height="56" rx="8"/>
+        <text class="t1" x="480" y="137" text-anchor="middle">ISP modem</text>
+        <text class="t2" x="480" y="156" text-anchor="middle">Bridge mode if possible</text>
+        <!-- gateway -->
+        <path class="wire" d="M480 168 V196"/>
+        <rect class="box core" x="360" y="196" width="240" height="64" rx="8"/>
+        <text class="t1" x="480" y="222" text-anchor="middle">Gateway / firewall</text>
+        <text class="t2" x="480" y="242" text-anchor="middle">Routes VLANs, enforces rules</text>
+        <!-- switch -->
+        <path class="wire" d="M480 260 V292"/>
+        <rect class="box core" x="360" y="292" width="240" height="60" rx="8"/>
+        <text class="t1" x="480" y="318" text-anchor="middle">PoE managed switch</text>
+        <text class="t2" x="480" y="337" text-anchor="middle">Trunks all VLANs</text>
+        <!-- drops -->
+        <path class="wire" d="M480 352 V380 H100 V410"/>
+        <path class="wire" d="M480 380 H290 V410"/>
+        <path class="wire" d="M480 352 V410"/>
+        <path class="wire" d="M480 380 H670 V410"/>
+        <path class="wire" d="M480 380 H860 V410"/>
+        <!-- bottom row -->
+        <rect class="box" x="20" y="410" width="160" height="62" rx="8"/>
+        <text class="t1" x="100" y="436" text-anchor="middle">Wi-Fi AP #1</text>
+        <text class="t2" x="100" y="456" text-anchor="middle">4 SSIDs</text>
+        <rect class="box" x="210" y="410" width="160" height="62" rx="8"/>
+        <text class="t1" x="290" y="436" text-anchor="middle">Wi-Fi AP #2</text>
+        <text class="t2" x="290" y="456" text-anchor="middle">4 SSIDs</text>
+        <rect class="box core" x="400" y="410" width="160" height="62" rx="8"/>
+        <text class="t1" x="480" y="436" text-anchor="middle">DXP4800 GT</text>
+        <text class="t2" x="480" y="456" text-anchor="middle">NAS · Docker · VM</text>
+        <rect class="box" x="590" y="410" width="160" height="62" rx="8"/>
+        <text class="t1" x="670" y="436" text-anchor="middle">PoE cameras</text>
+        <text class="t2" x="670" y="456" text-anchor="middle">No internet</text>
+        <rect class="box" x="780" y="410" width="160" height="62" rx="8"/>
+        <text class="t1" x="860" y="436" text-anchor="middle">Wired desk</text>
+        <text class="t2" x="860" y="456" text-anchor="middle">PC, TV, consoles</text>
+        <!-- linux app box -->
+        <path class="wire" d="M480 380 H1050 V410"/>
+        <rect class="box" x="970" y="410" width="160" height="62" rx="8"/>
+        <text class="t1" x="1050" y="436" text-anchor="middle">Linux box</text>
+        <text class="t2" x="1050" y="456" text-anchor="middle">Docker · client apps</text>
+        <!-- external clients + cloudflare tunnel -->
+        <rect class="box" x="900" y="24" width="230" height="72" rx="8"/>
+        <text class="t1" x="916" y="54">External clients</text>
+        <text class="t2" x="916" y="76">real-estate. / health.mydomain.com</text>
+        <path class="cf" d="M580 52 H900"/>
+        <text class="cfl" x="600" y="44">HTTPS to Cloudflare</text>
+        <path class="cf" d="M1050 410 V200 H640 V70 H580"/>
+        <text class="cfl" x="660" y="190">Cloudflare Tunnel (outbound only)</text>
+        <!-- vlan tags -->
+        <text class="tag trust" x="20" y="494">trusted</text><text class="tag iot" x="76" y="494">iot</text><text class="tag guest" x="104" y="494">guest</text><text class="tag mgmt" x="146" y="494">mgmt</text>
+        <text class="tag trust" x="210" y="494">trusted</text><text class="tag iot" x="266" y="494">iot</text><text class="tag guest" x="294" y="494">guest</text><text class="tag mgmt" x="336" y="494">mgmt</text>
+        <text class="tag srv" x="480" y="494" text-anchor="middle">servers</text>
+        <text class="tag cam" x="670" y="494" text-anchor="middle">cameras</text>
+        <text class="tag trust" x="860" y="494" text-anchor="middle">trusted / iot</text>
+        <text class="tag dmz" x="1050" y="494" text-anchor="middle">dmz</text>
+      </svg>
+    </div>
+  </section>
+
+  <section id="vlans">
+    <div class="head"><div class="eyebrow">Network segments</div><h2>Seven VLANs, one job each</h2>
+      <p class="prose muted">The VLAN ID matches the third octet of the subnet, so you can tell a device's VLAN from its IP. The design uses <code>10.0.x.0/24</code> instead of <code>192.168.1.x</code>. Hotel and café networks use <code>192.168.x</code> almost everywhere, and an address clash there breaks remote access.</p></div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>VLAN</th><th>ID</th><th>Subnet</th><th>Wi-Fi name</th><th>What lives here</th><th>Internet</th></tr></thead>
+        <tbody>
+          <tr><td><span class="vl mgmt">Management</span></td><td class="mono">10</td><td class="mono nowrap">10.0.10.0/24</td><td class="muted">none (wired)</td><td>Gateway, switch, access points</td><td>Updates only</td></tr>
+          <tr><td><span class="vl trust">Trusted</span></td><td class="mono">20</td><td class="mono nowrap">10.0.20.0/24</td><td class="mono">Home</td><td>Your laptops, phones, tablets, desktop</td><td>Yes</td></tr>
+          <tr><td><span class="vl srv">Servers</span></td><td class="mono">30</td><td class="mono nowrap">10.0.30.0/24</td><td class="muted">none (wired)</td><td>NAS <code>.10</code>, Home Assistant VM <code>.20</code>, Docker services</td><td>Yes</td></tr>
+          <tr><td><span class="vl iot">IoT</span></td><td class="mono">40</td><td class="mono nowrap">10.0.40.0/24</td><td class="mono">Home-IoT</td><td>Smart plugs, bulbs, TVs, speakers, appliances</td><td>Yes (can tighten per device)</td></tr>
+          <tr><td><span class="vl cam">Cameras</span></td><td class="mono">50</td><td class="mono nowrap">10.0.50.0/24</td><td class="muted">none (PoE wired)</td><td>IP cameras, doorbell</td><td><b>No</b></td></tr>
+          <tr><td><span class="vl guest">Guest</span></td><td class="mono">60</td><td class="mono nowrap">10.0.60.0/24</td><td class="mono">Home-Guest</td><td>Visitors' devices, client isolation on</td><td>Yes, only that</td></tr>
+          <tr><td><span class="vl dmz">DMZ</span></td><td class="mono">70</td><td class="mono nowrap">10.0.70.0/24</td><td class="muted">none (wired)</td><td>Linux box <code>.10</code> running the client-facing apps</td><td>Yes (Cloudflare Tunnel goes out)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose muted">IoT gets a 2.4 GHz-friendly SSID (WPA2, no band steering), because many cheap devices can't join WPA3 or 5 GHz networks. Keep the number of SSIDs at four or fewer. Each extra SSID costs airtime.</p>
+  </section>
+
+  <section id="rules">
+    <div class="head"><div class="eyebrow">Firewall rules</div><h2>Who can talk to whom</h2>
+      <p class="prose muted">The default between VLANs is <b>block</b>. Every arrow below is an explicit allow rule on the gateway. Replies to allowed connections ("established/related") always pass, so a trusted laptop can open a camera stream without the camera being able to start a connection back.</p></div>
+    <div class="scroll">
+      <table class="matrix">
+        <thead><tr><th>From ↓ / To →</th><th>Mgmt</th><th>Trusted</th><th>Servers</th><th>IoT</th><th>Cameras</th><th>Guest</th><th>DMZ</th><th>Internet</th></tr></thead>
+        <tbody>
+          <tr><td><span class="vl mgmt">Management</span></td><td><span class="p na">—</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p lim">Updates</span></td></tr>
+          <tr><td><span class="vl trust">Trusted</span></td><td><span class="p ok">Allow</span></td><td><span class="p na">—</span></td><td><span class="p ok">Allow</span></td><td><span class="p ok">Allow</span></td><td><span class="p lim">Viewing</span></td><td><span class="p no">Block</span></td><td><span class="p ok">Allow</span></td><td><span class="p ok">Allow</span></td></tr>
+          <tr><td><span class="vl srv">Servers</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p na">—</span></td><td><span class="p ok">Allow</span></td><td><span class="p ok">Allow</span></td><td><span class="p no">Block</span></td><td><span class="p lim">Backup pull</span></td><td><span class="p ok">Allow</span></td></tr>
+          <tr><td><span class="vl iot">IoT</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p lim">HA + MQTT</span></td><td><span class="p na">—</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p ok">Allow</span></td></tr>
+          <tr><td><span class="vl cam">Cameras</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p lim">NTP only</span></td><td><span class="p no">Block</span></td><td><span class="p na">—</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td></tr>
+          <tr><td><span class="vl guest">Guest</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p na">—</span></td><td><span class="p no">Block</span></td><td><span class="p ok">Allow</span></td></tr>
+          <tr><td><span class="vl dmz">DMZ</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p lim">DNS only</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p no">Block</span></td><td><span class="p na">—</span></td><td><span class="p ok">Allow</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="legend"><span><span class="p ok">Allow</span> any port</span><span><span class="p lim">Limited</span> listed ports only</span><span><span class="p no">Block</span> default deny</span></div>
+    <ul class="prose">
+      <li><b>IoT → Servers</b> is limited to Home Assistant (<code>8123</code>) and MQTT (<code>1883</code>). It lets devices push state without being able to reach the NAS file shares.</li>
+      <li><b>Servers → Cameras</b> lets Frigate pull the RTSP video streams (<code>554</code>). The cameras never talk to the internet. That blocks the "phone home" cloud features many cheap cameras ship with.</li>
+      <li><b>DMZ → anything at home</b> is blocked, apart from DNS. The Linux box is the one machine strangers' traffic reaches, so if an app on it is ever compromised, the attacker is stuck in the DMZ. The NAS pulls backups <i>from</i> it (<b>Servers → DMZ</b>, SSH <code>22</code>), so the Linux box never holds credentials for the NAS.</li>
+      <li><b>Trusted → Cameras</b> is for the cameras' own web pages during setup. Day to day you watch video through Frigate or Home Assistant instead.</li>
+      <li><b>DNS:</b> every VLAN may reach AdGuard Home on the NAS on port <code>53</code>. Block outbound port 53 to anywhere else, so IoT devices can't bypass it with hard-coded DNS servers.</li>
+      <li><b>Casting and AirPlay:</b> turn on the gateway's mDNS reflector between Trusted and IoT, so your phone still finds the TV and speakers.</li>
+    </ul>
+  </section>
+
+  <section id="remote">
+    <div class="head"><div class="eyebrow">Remote access</div><h2>Tailscale, with nothing exposed</h2></div>
+    <div class="prose" style="display:grid;gap:12px">
+      <p>Tailscale builds an encrypted WireGuard mesh between your devices. Connections go out from your home, so the router needs <b>no port forwards</b>, and it still works if your ISP puts you behind carrier-grade NAT.</p>
+      <ol>
+        <li>Run Tailscale on the NAS (UGOS app or a Docker container) and approve it as a <b>subnet router</b> for <code>10.0.30.0/24</code> (servers only). Add <code>10.0.50.0/24</code> only if you want raw camera access from outside.</li>
+        <li>Install the Tailscale app on your phone and laptop. Sign in with an account that has <b>MFA</b>.</li>
+        <li>In the admin console, set <b>split DNS</b>: queries for <code>home.&lt;yourdomain&gt;</code> go to AdGuard at <code>10.0.30.10</code>. Then <code>https://jellyfin.home.&lt;yourdomain&gt;</code> works the same at home and away, using the wildcard certificate you already set up in Nginx Proxy Manager.</li>
+        <li>Write an <b>access policy (ACL)</b> in Tailscale so only your own devices reach the subnet. Add family members later with narrower rules, for example Jellyfin only.</li>
+        <li>Optional: make the NAS an <b>exit node</b>, so traffic from public Wi-Fi goes through your home connection.</li>
+      </ol>
+      <div class="callout">Turn <b>off</b> UGREEN's own remote-access relay (UGREENlink) and UPnP on the router once Tailscale works. Every remote path you don't use is one less thing to keep patched.</div>
+    </div>
+  </section>
+
+  <section id="public">
+    <div class="head"><div class="eyebrow">Client apps</div><h2>Publishing apps to external clients</h2>
+      <p class="prose muted">Clients open <code>https://real-estate.mydomain.com</code> and <code>https://health.mydomain.com</code> with no VPN and nothing to install. The apps run in Docker on the Linux box in the DMZ, and Cloudflare Tunnel carries the traffic in.</p></div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Public address</th><th>Goes to</th><th>App</th><th>Login in front</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">real-estate.mydomain.com</td><td class="mono nowrap">http://real-estate:8080</td><td>real-estate-pty</td><td>Optional (Cloudflare Access)</td></tr>
+          <tr><td class="mono">health.mydomain.com</td><td class="mono nowrap">http://health:8000</td><td>Health app</td><td>Optional (Cloudflare Access)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose" style="display:grid;gap:12px">
+      <h3>How it works</h3>
+      <ol>
+        <li>A <code>cloudflared</code> container on the Linux box opens an <b>outbound</b> connection to Cloudflare. The router doesn't need port forwarding, your home IP stays hidden, and it works behind carrier-grade NAT.</li>
+        <li>In the Cloudflare dashboard (Zero Trust → Networks → Tunnels) you add a <b>public hostname</b> for each app. Cloudflare creates the DNS record and the HTTPS certificate automatically.</li>
+        <li>A client's browser connects to Cloudflare. Cloudflare sends the request down the tunnel, and <code>cloudflared</code> hands it to the right container.</li>
+      </ol>
+      <h3>Docker Compose on the Linux box</h3>
+      <p class="muted">The apps don't publish any ports on the host. Only <code>cloudflared</code> can reach them, over a private Docker network.</p>
+    </div>
+<pre class="code">services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest   <span class="c"># pin a specific version once it works</span>
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}       <span class="c"># from the Cloudflare dashboard, kept in .env</span>
+    restart: unless-stopped
+    networks: [public]
+
+  real-estate:
+    image: real-estate-pty:latest
+    expose: ["8080"]                       <span class="c"># reachable by cloudflared, not by the LAN</span>
+    restart: unless-stopped
+    networks: [public]
+
+  health:
+    image: health-app:latest
+    expose: ["8000"]
+    restart: unless-stopped
+    networks: [public]
+
+networks:
+  public: {}</pre>
+    <div class="prose" style="display:grid;gap:12px">
+      <h3>One domain, two kinds of names</h3>
+      <ul>
+        <li><b>Public names</b> (<code>real-estate.</code>, <code>health.</code>) live in <b>Cloudflare DNS</b> and point at the tunnel. Anyone can resolve them.</li>
+        <li><b>Private names</b> (<code>*.home.mydomain.com</code>) live only in <b>AdGuard</b> at home and in Tailscale split DNS. They never appear in public DNS.</li>
+        <li>Buy the domain anywhere, but move its DNS to <b>Cloudflare</b> (the free plan is enough). The tunnel needs that, and NPM's wildcard certificate already uses it.</li>
+      </ul>
+      <h3>Before you give clients the link</h3>
+      <ul>
+        <li><b>Run production servers</b>, not development ones: gunicorn or uvicorn instead of <code>runserver</code> or <code>npm run dev</code>, with debug mode off.</li>
+        <li><b>Tell the apps their public name.</b> Set allowed hosts and CSRF trusted origins to the new hostnames, and trust the <code>X-Forwarded-Proto</code> header so the apps know they're behind HTTPS.</li>
+        <li><b>Decide who may see each app.</b> If only known clients should get in, put <b>Cloudflare Access</b> in front: clients enter their email and get a one-time code. It's free for up to 50 users. If the apps are public websites, turn on Cloudflare's rate limiting and bot protection instead.</li>
+        <li><b>Back up the app databases</b>. The NAS pulls nightly dumps from the Linux box over SSH.</li>
+      </ul>
+      <div class="callout">Why not forward port 443 to Nginx Proxy Manager instead? That works, but it publishes your home IP, invites constant scanning, and breaks if your ISP uses carrier-grade NAT. The tunnel avoids all three. NPM stays inside for the <code>*.home</code> names.</div>
+      <div class="callout warn"><b>100 MB limit per request.</b> On Cloudflare's free plan, anything a browser <i>sends</i> to your app in a single request must be under 100 MB. In practice that means file uploads: one photo, a few PDFs or a short video are fine, but a single 300 MB video upload fails with error 413. Normal browsing, forms and <b>downloads</b> aren't affected, and there's no monthly total. If an app needs bigger uploads, upload in chunks (each under 100 MB) or do the large uploads yourself over Tailscale, which doesn't go through Cloudflare.</div>
+    </div>
+  </section>
+
+  <section id="storage">
+    <div class="head"><div class="eyebrow">Storage &amp; backup</div><h2>8 TB usable, protected three ways</h2></div>
+    <div class="facts">
+      <div class="fact"><span class="k">Pool</span><span class="v">RAID 5 · Btrfs</span><span class="d">3 × 4 TB = 8 TB usable (≈7.2 TiB shown in the UI). One disk can fail.</span></div>
+      <div class="fact"><span class="k">Fast tier</span><span class="v">2 × M.2 NVMe (later)</span><span class="d">A small mirrored SSD pool for Docker apps and the HA VM</span></div>
+      <div class="fact"><span class="k">Growth</span><span class="v">+1 bay free</span><span class="d">Adding a 4th 4 TB disk expands RAID 5 to 12 TB</span></div>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Share</th><th>Holds</th><th>Snapshots</th><th>USB backup</th><th>Cloud backup</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">photos</td><td>Phone backups, family photos</td><td>Hourly, keep 2 weeks</td><td>Weekly</td><td><b>Yes</b>, irreplaceable</td></tr>
+          <tr><td class="mono">documents</td><td>Paperwork, scans, personal files</td><td>Hourly, keep 2 weeks</td><td>Weekly</td><td><b>Yes</b></td></tr>
+          <tr><td class="mono">appdata</td><td>Docker configs (NPM, HA, AdGuard…)</td><td>Daily, keep 30 days</td><td>Weekly</td><td><b>Yes</b>, small but painful to rebuild</td></tr>
+          <tr><td class="mono">timemachine</td><td>Mac backups, with a quota set</td><td>No</td><td>No</td><td>No (already a backup)</td></tr>
+          <tr><td class="mono">media</td><td>Movies, TV, music for Jellyfin</td><td>Weekly</td><td>Optional</td><td>No, can be re-ripped</td></tr>
+          <tr><td class="mono">surveillance</td><td>Frigate recordings, with a quota set</td><td>No</td><td>No</td><td>No, rolling 14 days</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout warn prose"><b>RAID isn't a backup.</b> It covers a dead disk. It doesn't cover deleted files, ransomware, a failed NAS, theft or fire. Snapshots cover the first two. The USB drive and the cloud copy (Backblaze B2 or similar, about $6/TB/month) cover the rest.</div>
+  </section>
+
+  <section id="services">
+    <div class="head"><div class="eyebrow">Services</div><h2>What runs where</h2>
+      <p class="prose muted">Home services run on the NAS on the servers VLAN. Each gets a private HTTPS name through Nginx Proxy Manager, as described in this repo's README. Client-facing apps run on the Linux box in the DMZ and are published through Cloudflare Tunnel.</p></div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Service</th><th>Runs as</th><th>Purpose</th><th>Name</th><th>Phase</th></tr></thead>
+        <tbody>
+          <tr><td><b>Tailscale</b></td><td>App / container</td><td>Remote access, subnet router</td><td class="muted">—</td><td class="mono">1</td></tr>
+          <tr><td><b>Nginx Proxy Manager</b></td><td>Docker</td><td>HTTPS reverse proxy, wildcard cert</td><td class="mono">npm.home.…</td><td class="mono">1</td></tr>
+          <tr><td><b>AdGuard Home</b></td><td>Docker</td><td>DNS for all VLANs, ad and tracker blocking, local names</td><td class="mono">dns.home.…</td><td class="mono">1</td></tr>
+          <tr><td><b>Home Assistant OS</b></td><td>VM</td><td>Smart home hub that controls the IoT VLAN</td><td class="mono">ha.home.…</td><td class="mono">4</td></tr>
+          <tr><td><b>Mosquitto</b></td><td>Docker</td><td>MQTT broker for Zigbee and ESPHome devices</td><td class="muted">—</td><td class="mono">4</td></tr>
+          <tr><td><b>Jellyfin</b></td><td>Docker</td><td>Media server, uses the Ryzen's iGPU for transcoding</td><td class="mono">jellyfin.home.…</td><td class="mono">4</td></tr>
+          <tr><td><b>Frigate</b></td><td>Docker</td><td>Camera recorder (NVR) with object detection</td><td class="mono">nvr.home.…</td><td class="mono">4</td></tr>
+          <tr><td><b>cloudflared</b> <span class="muted">(Linux box)</span></td><td>Docker</td><td>Tunnel that publishes the client apps</td><td class="muted">—</td><td class="mono">2</td></tr>
+          <tr><td><b>real-estate-pty</b> <span class="muted">(Linux box)</span></td><td>Docker</td><td>Client app on port 8080</td><td class="mono">real-estate.mydomain.com</td><td class="mono">2</td></tr>
+          <tr><td><b>Health app</b> <span class="muted">(Linux box)</span></td><td>Docker</td><td>Client app on port 8000</td><td class="mono">health.mydomain.com</td><td class="mono">2</td></tr>
+          <tr><td><b>Immich</b> (optional)</td><td>Docker</td><td>Self-hosted Google Photos replacement</td><td class="mono">photos.home.…</td><td class="mono">5</td></tr>
+          <tr><td><b>Uptime Kuma</b></td><td>Docker</td><td>Alerts when a service or disk goes down</td><td class="mono">status.home.…</td><td class="mono">5</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose muted">The DXP4800 GT ships with 8 GB of RAM. A Home Assistant VM, Frigate, Jellyfin and the rest add up to more than that, so plan to upgrade to 16 or 32 GB of DDR4 SO-DIMM in Phase 4.</p>
+  </section>
+
+  <section id="phases">
+    <div class="head"><div class="eyebrow">Phases</div><h2>Build order</h2>
+      <p class="prose muted">Each phase leaves the network fully working. Don't start the next one until the current phase's "done when" list is all ticked. The checkboxes are saved in this browser only.</p></div>
+    <div class="phases">
+
+      <article class="phase" data-phase="1">
+        <div class="ph-head"><div><div class="ph-num">Phase 1</div><h3>NAS on the current network</h3></div><span class="ph-cost">≈ NAS + 3 disks (already planned)</span></div>
+        <div class="cols">
+          <div><h4>Do</h4><ul class="checks">
+            <li><label><input type="checkbox" id="p1a"><span>Install the 3 disks, create a RAID 5 Btrfs pool, run a full SMART test</span></label></li>
+            <li><label><input type="checkbox" id="p1b"><span>Give the NAS a DHCP reservation on the Deco network</span></label></li>
+            <li><label><input type="checkbox" id="p1c"><span>Create the shares above with snapshot schedules</span></label></li>
+            <li><label><input type="checkbox" id="p1d"><span>Deploy NPM (this repo), AdGuard Home and Tailscale</span></label></li>
+            <li><label><input type="checkbox" id="p1e"><span>Point the Deco's DNS at AdGuard</span></label></li>
+            <li><label><input type="checkbox" id="p1f"><span>Set up phone photo backup and Time Machine</span></label></li>
+          </ul></div>
+          <div><h4>Done when</h4><ul>
+            <li>You can open <code>https://npm.home.&lt;domain&gt;</code> from your phone on cellular data, through Tailscale</li>
+            <li>Deleting a test file and restoring it from a snapshot works</li>
+            <li>The NAS admin account has MFA and the default admin is disabled</li>
+          </ul></div>
+        </div>
+      </article>
+
+      <article class="phase" data-phase="2">
+        <div class="ph-head"><div><div class="ph-num">Phase 2</div><h3>New gateway and switch, VLANs on the wire</h3></div><span class="ph-cost">≈ $230–450</span></div>
+        <div class="cols">
+          <div><h4>Do</h4><ul class="checks">
+            <li><label><input type="checkbox" id="p2a"><span>Put the ISP modem in bridge mode (or set up a DMZ to the new gateway)</span></label></li>
+            <li><label><input type="checkbox" id="p2b"><span>Install the gateway and switch. Create all 6 VLANs and DHCP scopes.</span></label></li>
+            <li><label><input type="checkbox" id="p2c"><span>Move the NAS to the servers VLAN at <code>10.0.30.10</code></span></label></li>
+            <li><label><input type="checkbox" id="p2d"><span>Switch the Decos to <b>access point mode</b>. Plug them into Trusted ports for now.</span></label></li>
+            <li><label><input type="checkbox" id="p2e"><span>Apply the firewall matrix and point DHCP DNS at AdGuard</span></label></li>
+            <li><label><input type="checkbox" id="p2f"><span>Update the Tailscale subnet route to <code>10.0.30.0/24</code></span></label></li>
+            <li><label><input type="checkbox" id="p2g"><span>Put the Linux box on a DMZ port at <code>10.0.70.10</code></span></label></li>
+            <li><label><input type="checkbox" id="p2h"><span>Create the Cloudflare Tunnel. Deploy <code>cloudflared</code> and the two apps.</span></label></li>
+            <li><label><input type="checkbox" id="p2i"><span>Add the two public hostnames, plus Cloudflare Access if the apps are private</span></label></li>
+          </ul></div>
+          <div><h4>Done when</h4><ul>
+            <li>A laptop on Trusted reaches the NAS. A device on the Guest port can't.</li>
+            <li><code>real-estate.mydomain.com</code> and <code>health.mydomain.com</code> load on a phone on cellular data, with Tailscale off</li>
+            <li>From the Linux box, the NAS doesn't respond (except DNS)</li>
+            <li>Remote access through Tailscale still works</li>
+            <li>The gateway config is backed up to the NAS</li>
+          </ul></div>
+        </div>
+      </article>
+
+      <article class="phase" data-phase="3">
+        <div class="ph-head"><div><div class="ph-num">Phase 3</div><h3>Wi-Fi per VLAN, move the IoT devices</h3></div><span class="ph-cost">≈ $200–300</span></div>
+        <div class="cols">
+          <div><h4>Do</h4><ul class="checks">
+            <li><label><input type="checkbox" id="p3a"><span>Replace the Decos with two VLAN-aware access points (PoE)</span></label></li>
+            <li><label><input type="checkbox" id="p3b"><span>Create the Home, Home-IoT and Home-Guest SSIDs</span></label></li>
+            <li><label><input type="checkbox" id="p3c"><span>Re-join every IoT device to Home-IoT, one room at a time</span></label></li>
+            <li><label><input type="checkbox" id="p3d"><span>Turn on the mDNS reflector and test casting to the TV</span></label></li>
+            <li><label><input type="checkbox" id="p3e"><span>Retire the Decos, or keep one as a guest-only AP on a Guest port</span></label></li>
+          </ul></div>
+          <div><h4>Done when</h4><ul>
+            <li>The gateway's client list shows no IoT devices on Trusted</li>
+            <li>From an IoT device's subnet, the NAS file shares don't respond</li>
+            <li>Casting and AirPlay from your phone still work</li>
+          </ul></div>
+        </div>
+      </article>
+
+      <article class="phase" data-phase="4">
+        <div class="ph-head"><div><div class="ph-num">Phase 4</div><h3>Home Assistant, media and cameras</h3></div><span class="ph-cost">≈ $80–150 RAM + cameras</span></div>
+        <div class="cols">
+          <div><h4>Do</h4><ul class="checks">
+            <li><label><input type="checkbox" id="p4a"><span>Upgrade the NAS RAM. Optionally add 2 NVMe SSDs for apps.</span></label></li>
+            <li><label><input type="checkbox" id="p4b"><span>Run the Home Assistant OS VM on Servers. Adopt the IoT devices.</span></label></li>
+            <li><label><input type="checkbox" id="p4c"><span>Deploy Jellyfin with hardware transcoding turned on</span></label></li>
+            <li><label><input type="checkbox" id="p4d"><span>Wire the PoE cameras to Cameras ports. Deploy Frigate with a quota.</span></label></li>
+            <li><label><input type="checkbox" id="p4e"><span>Add each service to NPM and AdGuard</span></label></li>
+          </ul></div>
+          <div><h4>Done when</h4><ul>
+            <li>The camera timeline in Frigate plays back, and cameras show no internet traffic in the gateway logs</li>
+            <li>A Home Assistant automation fires with the internet unplugged</li>
+          </ul></div>
+        </div>
+      </article>
+
+      <article class="phase" data-phase="5">
+        <div class="ph-head"><div><div class="ph-num">Phase 5</div><h3>Backups, monitoring and hardening</h3></div><span class="ph-cost">≈ $120 USB drive + ≈$6/TB/mo cloud</span></div>
+        <div class="cols">
+          <div><h4>Do</h4><ul class="checks">
+            <li><label><input type="checkbox" id="p5a"><span>Weekly backup job to an external USB drive (8 TB+)</span></label></li>
+            <li><label><input type="checkbox" id="p5b"><span>Nightly encrypted cloud backup of photos, documents and appdata</span></label></li>
+            <li><label><input type="checkbox" id="p5c"><span>Set up Uptime Kuma plus disk-health and UPS alerts to your phone</span></label></li>
+            <li><label><input type="checkbox" id="p5d"><span>Add a small UPS so the NAS shuts down cleanly in a power cut</span></label></li>
+            <li><label><input type="checkbox" id="p5e"><span>Go through the security baseline below</span></label></li>
+          </ul></div>
+          <div><h4>Done when</h4><ul>
+            <li>You've restored one file from the cloud copy to a different computer</li>
+            <li>Pulling the NAS power cord (on the UPS) triggers an alert and a clean shutdown</li>
+          </ul></div>
+        </div>
+      </article>
+    </div>
+    <p class="progress" id="progress" aria-live="polite"></p>
+  </section>
+
+  <section id="hardware">
+    <div class="head"><div class="eyebrow">Hardware</div><h2>Shopping list</h2>
+      <p class="prose muted">The design assumes <b>UniFi</b>, which configures the gateway, switch, APs, VLANs and SSIDs from one app. TP-Link Omada is a cheaper equivalent with the same capabilities. Prices are rough US figures. Check current pricing before buying.</p></div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Item</th><th>Example</th><th>Why</th><th>≈ Price</th><th>Phase</th></tr></thead>
+        <tbody>
+          <tr><td>NAS</td><td>UGREEN DXP4800 GT</td><td>Docker, VMs, 10GbE, 2 × M.2</td><td class="mono">owned/planned</td><td class="mono">1</td></tr>
+          <tr><td>Disks</td><td>3 × WD Red Plus 4 TB (WD40EFPX)</td><td>CMR NAS drives, RAID 5</td><td class="mono">owned/planned</td><td class="mono">1</td></tr>
+          <tr><td>App host</td><td>Linux box with Docker</td><td>Runs the client-facing apps, isolated in the DMZ</td><td class="mono">owned/planned</td><td class="mono">2</td></tr>
+          <tr><td>Domain</td><td><code>mydomain.com</code>, DNS on Cloudflare</td><td>Public app names, wildcard cert for <code>*.home</code></td><td class="mono">$10–20/yr</td><td class="mono">1</td></tr>
+          <tr><td>Gateway</td><td>UniFi Cloud Gateway Ultra or Max</td><td>VLAN routing, firewall, controller for everything else</td><td class="mono">$130–200</td><td class="mono">2</td></tr>
+          <tr><td>Switch</td><td>UniFi 8-port PoE (Lite 8 PoE, or a 2.5GbE model)</td><td>VLAN trunks, powers the APs and cameras</td><td class="mono">$110–250</td><td class="mono">2</td></tr>
+          <tr><td>Access points</td><td>2 × UniFi U7 Lite or U6+</td><td>Map one SSID to each VLAN</td><td class="mono">$200–260</td><td class="mono">3</td></tr>
+          <tr><td>RAM</td><td>16–32 GB DDR4 SO-DIMM</td><td>Room for the HA VM and Frigate</td><td class="mono">$40–90</td><td class="mono">4</td></tr>
+          <tr><td>NVMe (optional)</td><td>2 × 500 GB–1 TB</td><td>Fast mirrored pool for apps</td><td class="mono">$80–140</td><td class="mono">4</td></tr>
+          <tr><td>Cameras</td><td>PoE cameras with RTSP (no cloud lock-in)</td><td>Work locally with Frigate</td><td class="mono">$50–120 ea</td><td class="mono">4</td></tr>
+          <tr><td>USB backup drive</td><td>8 TB external</td><td>Offline copy</td><td class="mono">≈ $120</td><td class="mono">5</td></tr>
+          <tr><td>UPS</td><td>600–900 VA with USB signaling</td><td>Clean shutdown, protects the RAID</td><td class="mono">$90–150</td><td class="mono">5</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose muted">The DXP4800 GT's 10GbE ports work at 1 or 2.5 GbE. The 10GbE speed only matters once your switch and computers support it, and that can be a much later upgrade.</p>
+  </section>
+
+  <section id="security">
+    <div class="head"><div class="eyebrow">Security baseline</div><h2>Rules that apply everywhere</h2></div>
+    <ul class="prose">
+      <li><b>No inbound ports</b> on the router. Turn UPnP off. Tailscale is the only way in for you. Cloudflare Tunnel is the only way in for clients, and it reaches only the DMZ.</li>
+      <li><b>Public apps stay in the DMZ.</b> Never publish a NAS service or Home Assistant through the tunnel. Use Tailscale for those.</li>
+      <li><b>MFA everywhere it exists:</b> the Tailscale identity, the UniFi account, the NAS admin and the Home Assistant admin.</li>
+      <li><b>Admin interfaces</b> (NAS UI, NPM <code>:81</code>, the gateway) are reachable only from Trusted and Tailscale.</li>
+      <li><b>Separate accounts:</b> one admin for management, a normal user for everyday file access, and app-specific users for shares.</li>
+      <li><b>Updates:</b> turn on automatic security updates for UGOS and UniFi. Update Docker images monthly, with snapshots before.</li>
+      <li><b>Secrets</b> (Cloudflare token, Tailscale keys) stay in <code>.env</code> files that are git-ignored, as this repo already does.</li>
+      <li><b>Test restores</b> every quarter. A backup you haven't restored from is a guess.</li>
+    </ul>
+  </section>
+
+  <section id="questions">
+    <div class="head"><div class="eyebrow">Open questions</div><h2>Decisions still to make</h2>
+      <p class="prose muted">These change the parts list or the layout. Answers can go into the next version of this doc.</p></div>
+    <div>
+      <div class="q"><b>Can the ISP modem go into bridge mode?</b><span class="muted">If not, the new gateway sits behind it (double NAT). That's fine for Tailscale, but harder to troubleshoot.</span></div>
+      <div class="q"><b>Can you run Ethernet to where the two access points will go?</b><span class="muted">PoE APs need a cable each. If not, UniFi APs can mesh wirelessly, with some speed loss.</span></div>
+      <div class="q"><b>How many cameras, and are any outdoors?</b><span class="muted">This sizes the PoE budget, the surveillance quota and whether Frigate needs a Coral accelerator.</span></div>
+      <div class="q"><b>UniFi or TP-Link Omada?</b><span class="muted">UniFi is more polished. Omada costs about 30% less for the same VLAN features.</span></div>
+      <div class="q"><b>Which domain will you buy?</b><span class="muted">The doc uses <code>mydomain.com</code> as a placeholder. Its DNS must be on Cloudflare for both the tunnel and NPM's wildcard certificate.</span></div>
+      <div class="q"><b>Should clients log in before they see the apps?</b><span class="muted">If the real-estate and health apps are for specific clients, put Cloudflare Access in front. If they're public websites, leave them open but turn on rate limiting. A health app may hold sensitive personal data, which points toward Access.</span></div>
+      <div class="q"><b>Will anyone besides you need access to home services?</b><span class="muted">That decides the Tailscale ACLs, for example family members who only get Jellyfin.</span></div>
+    </div>
+  </section>
+
+  <footer>Version 2 · Written for a 4-bay UGREEN DXP4800 GT with 3 × 4 TB disks, a Linux Docker host for client apps, Tailscale and Cloudflare Tunnel, and a planned move off TP-Link Deco M5. Prices are approximate as of November 2026.<br>Live version: <a href="https://claude.ai/artifact/Vu1Y8aFkj8gqW2DJ4xkWa3">https://claude.ai/artifact/Vu1Y8aFkj8gqW2DJ4xkWa3</a> · Source: <code>docs/homelab-design.html</code> in the home-lab repo.</footer>
+</div>
+
+<script>
+(function () {
+  const boxes = Array.from(document.querySelectorAll('.checks input[type="checkbox"]'));
+  const KEY = 'homelab-design-checks';
+  let state = {};
+  try { state = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { state = {}; }
+  const out = document.getElementById('progress');
+  function render() {
+    const done = boxes.filter(b => b.checked).length;
+    out.textContent = done + ' of ' + boxes.length + ' tasks done';
+  }
+  boxes.forEach(b => {
+    if (state[b.id]) b.checked = true;
+    b.addEventListener('change', () => {
+      state[b.id] = b.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+      render();
+    });
+  });
+  render();
+})();
+</script>
