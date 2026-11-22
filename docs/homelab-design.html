@@ -66,9 +66,9 @@ body {
   font-family: var(--f-body); font-size: 16px; line-height: 1.6;
 }
 .wrap {
-  max-width: 1080px; margin: 0 auto;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  max-width: 1224px; margin: 0 auto;
+  padding-left: max(clamp(24px, 6vw, 72px), env(safe-area-inset-left, 0px));
+  padding-right: max(clamp(24px, 6vw, 72px), env(safe-area-inset-right, 0px));
   padding-block: 40px 80px;
 }
 .prose { max-width: 70ch; }
@@ -178,7 +178,7 @@ footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line);
     <div class="meta"><span>NAS: UGREEN DXP4800 GT</span><span>Disks: 3 × 4 TB WD Red Plus</span><span>App host: Linux + Docker</span><span>Remote: Tailscale</span><span>Public apps: Cloudflare Tunnel</span><span>Today: 2 × TP-Link Deco M5</span><span>Live version: <a href="https://claude.ai/artifact/Vu1Y8aFkj8gqW2DJ4xkWa3">claude.ai/artifact/Vu1Y8aFkj8gqW2DJ4xkWa3</a></span></div>
     <nav class="toc" aria-label="Sections">
       <a href="#summary">Summary</a><a href="#topology">Topology</a><a href="#vlans">Network segments</a><a href="#rules">Firewall rules</a><a href="#remote">Remote access</a><a href="#public">Client apps</a><a href="#storage">Storage &amp; backup</a><a href="#services">Services</a><a href="#phases">Phases</a><a href="#hardware">Hardware</a><a href="#security">Security baseline</a><a href="#questions">Open questions</a>
-    </div>
+    </nav>
   </header>
 
   <section id="summary">
