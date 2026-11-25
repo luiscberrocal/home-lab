@@ -1,0 +1,12 @@
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    restart: unless-stopped
+    environment:
+      DOMAIN: "https://vault.ts.thelabcreativeco.app"
+      ADMIN_TOKEN: ${ADMIN_TOKEN}
+    volumes:
+      - ./vw-data/:/data/
+    ports:
+      - 1776:80

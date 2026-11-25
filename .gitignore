@@ -152,3 +152,8 @@ Thumbs.db
 # ---------------------------------------------------------------------------
 nginx-proxy-manager/data/
 nginx-proxy-manager/letsencrypt/
+
+# ---------------------------------------------------------------------------
+# Vaultwarden runtime data (contains the vault database and private keys)
+# ---------------------------------------------------------------------------
+vault/vw-data/

@@ -15,4 +15,5 @@ services:
       DISABLE_IPV6: "true"
     volumes:
       - ./data:/data                     # NPM database, proxy host configs
+      - ./data/logs:/var/log/nginx
       - ./letsencrypt:/etc/letsencrypt   # Certificates and private keys
