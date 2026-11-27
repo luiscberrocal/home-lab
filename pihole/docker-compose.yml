@@ -1,0 +1,30 @@
+# Pi-hole v6 - network-wide ad blocking DNS server.
+# Docs: https://docs.pi-hole.net/docker/
+services:
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    restart: unless-stopped
+    ports:
+      # DNS is bound to the LAN IP only. systemd-resolved already listens on
+      # 127.0.0.53:53, so binding 0.0.0.0:53 would clash with it.
+      - "${PIHOLE_HOST_IP:?set PIHOLE_HOST_IP in .env}:53:53/tcp"
+      - "${PIHOLE_HOST_IP}:53:53/udp"
+      # Web UI. 80/443 are taken by Nginx Proxy Manager.
+      - "${PIHOLE_WEB_PORT:-8081}:80/tcp"
+    environment:
+      TZ: ${TZ:-America/Panama}
+      FTLCONF_webserver_api_password: ${PIHOLE_PASSWORD:?set PIHOLE_PASSWORD in .env}
+      # Answer queries from every network, not just the container's own subnet
+      # (Docker NAT makes LAN clients look non-local).
+      FTLCONF_dns_listeningMode: "all"
+      FTLCONF_dns_upstreams: ${PIHOLE_UPSTREAMS:-1.1.1.1;1.0.0.1}
+      # Make pi.hole resolve to the LAN IP instead of the container's internal
+      # Docker IP (unreachable from other devices).
+      FTLCONF_dns_reply_host_force4: "true"
+      FTLCONF_dns_reply_host_IPv4: ${PIHOLE_HOST_IP}
+      # Wildcard for the private names served by Nginx Proxy Manager.
+      # Uncomment and set your domain and the NPM host IP:
+      # FTLCONF_misc_dnsmasq_lines: "address=/home.example.com/192.168.68.106"
+    volumes:
+      - ./etc-pihole:/etc/pihole   # Settings, gravity (blocklist) database, logs

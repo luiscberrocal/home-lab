@@ -91,3 +91,49 @@ Docker network as NPM and forward to its container name instead of an IP.
   database and private keys. They are git-ignored, so back them up
   separately.
 - Keep port 81 reachable only from the LAN.
+
+## Ad blocking: Pi-hole
+
+Pi-hole is a DNS server that answers `0.0.0.0` for ad and tracker domains.
+Every device that uses it as its DNS server gets ads blocked.
+
+### 1. Start Pi-hole
+
+```bash
+cd pihole
+cp .env.example .env   # set PIHOLE_HOST_IP and PIHOLE_PASSWORD
+just pihole-up
+```
+
+- DNS listens on `PIHOLE_HOST_IP:53` only. `systemd-resolved` already uses
+  `127.0.0.53:53` on this host, so a `0.0.0.0:53` binding would clash.
+- The web UI is on `http://<host>:8081/admin` (80/443 belong to NPM).
+- Give the host a **DHCP reservation** on the router. If its IP changes,
+  the container can't bind port 53 and won't start.
+
+### 2. Test it before switching the network
+
+```bash
+just pihole-test                  # or: dig @192.168.68.106 doubleclick.net
+```
+
+`example.com` should return real IPs and `doubleclick.net` should return
+`0.0.0.0`. Then point one device's DNS at the host by hand and browse
+`https://d3ward.github.io/toolz/adblock` or `https://canyoublockit.com`.
+Queries show up live under *Query Log* in the web UI.
+
+### 3. Use it for the whole network
+
+On the router (Deco app: *More → Advanced → DHCP Server*), set the
+**primary DNS** to the Pi-hole host IP. Leave the secondary empty, or
+clients will skip Pi-hole whenever they like. Clients pick up the change
+when their DHCP lease renews (reconnect Wi-Fi to force it).
+
+### Notes
+
+- Change the password: `docker exec -it pihole pihole setpassword`.
+- Something legitimate broken? Find the domain in *Query Log* and allow it.
+- Add more lists under *Lists*, then run `docker exec pihole pihole -g`.
+- `pihole/etc-pihole` holds settings and logs and is git-ignored.
+- If Pi-hole is down, devices that only use it lose DNS. Keep the host up,
+  or add a second Pi-hole for redundancy.

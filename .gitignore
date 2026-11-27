@@ -157,3 +157,8 @@ nginx-proxy-manager/letsencrypt/
 # Vaultwarden runtime data (contains the vault database and private keys)
 # ---------------------------------------------------------------------------
 vault/vw-data/
+
+# ---------------------------------------------------------------------------
+# Pi-hole runtime data (settings, query logs)
+# ---------------------------------------------------------------------------
+pihole/etc-pihole/
