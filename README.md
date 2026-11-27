@@ -101,8 +101,9 @@ Every device that uses it as its DNS server gets ads blocked.
 
 ```bash
 cd pihole
-cp .env.example .env   # set PIHOLE_HOST_IP and PIHOLE_PASSWORD
+cp .env.example .env   # set PIHOLE_HOST_IP
 just pihole-up
+docker exec -it pihole pihole setpassword   # set the web UI password
 ```
 
 - DNS listens on `PIHOLE_HOST_IP:53` only. `systemd-resolved` already uses
@@ -131,7 +132,11 @@ when their DHCP lease renews (reconnect Wi-Fi to force it).
 
 ### Notes
 
-- Change the password: `docker exec -it pihole pihole setpassword`.
+- Change the password with `docker exec -it pihole pihole setpassword` or in
+  the web UI (*Settings → Web interface / API*). It's stored in
+  `pihole/etc-pihole/pihole.toml`, not in `.env`. Don't set
+  `FTLCONF_webserver_api_password` in the compose file: Pi-hole locks any
+  setting that comes from an environment variable, so both of these would fail.
 - Something legitimate broken? Find the domain in *Query Log* and allow it.
 - Add more lists under *Lists*, then run `docker exec pihole pihole -g`.
 - `pihole/etc-pihole` holds settings and logs and is git-ignored.
